@@ -1,0 +1,44 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{e63f9f32-0a80-46a1-a0d9-8e2fd1125aa7}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Projects Include="HwClient.dproj" />
+    <Projects Include="HwServer.dproj" />
+  </ItemGroup>
+  <ProjectExtensions>
+    <Borland.Personality>Default.Personality</Borland.Personality>
+    <Borland.ProjectType />
+    <BorlandProject>
+  <BorlandProject xmlns=""> <Default.Personality> </Default.Personality> </BorlandProject></BorlandProject>
+  </ProjectExtensions>
+  <Target Name="HwServer">
+    <MSBuild Projects="HwServer.dproj" Targets="" />
+  </Target>
+  <Target Name="HwServer:Clean">
+    <MSBuild Projects="HwServer.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="HwServer:Make">
+    <MSBuild Projects="HwServer.dproj" Targets="Make" />
+  </Target>
+  <Target Name="HwClient">
+    <MSBuild Projects="HwClient.dproj" Targets="" />
+  </Target>
+  <Target Name="HwClient:Clean">
+    <MSBuild Projects="HwClient.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="HwClient:Make">
+    <MSBuild Projects="HwClient.dproj" Targets="Make" />
+  </Target>
+  <Target Name="Build">
+    <CallTarget Targets="HwServer;HwClient" />
+  </Target>
+  <Target Name="Clean">
+    <CallTarget Targets="HwServer:Clean;HwClient:Clean" />
+  </Target>
+  <Target Name="Make">
+    <CallTarget Targets="HwServer:Make;HwClient:Make" />
+  </Target>
+  <Import Condition="Exists('$(MSBuildBinPath)\Borland.Group.Targets')" Project="$(MSBuildBinPath)\Borland.Group.Targets" />
+</Project>
