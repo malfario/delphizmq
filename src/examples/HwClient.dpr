@@ -26,46 +26,43 @@ program HwClient;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, zmq, Windows;
+  SysUtils, zmq, ZMQContext, ZMQSocket, ZMQMessage;
 
 var
-  context, requester: Pointer;
+  context: TZMQContext;
+  socket: TZMQSocket;
   request_nbr: Integer;
-  request, reply: PZMQMsg;
+  request, reply: TZMQMessage;
+  req_data: Pointer;
 begin
-  GetMem(request, SizeOf(request));
-  GetMem(reply, SizeOf(reply));
+
+  context := TZMQContext.Create(0);
+  socket := TZMQSocket.Create(context, ZMQ_REQ);
 
   try
     try
-      context := zmq_init(1);
-
       writeln('Connecting to hello world server...');
-      requester := zmq_socket(context, ZMQ_REQ);
-      zmq_connect(requester, 'tcp://localhost:5555');
+      socket.Connect(PChar('tcp://localhost:5555'));
 
       for request_nbr := 0 to 9 do
       begin
-        zmq_msg_init_size(request, 5);
-        CopyMemory(zmq_msg_data(request), PChar('Hello'), 5);
+        request := TZMQMessage.Create(6);
+        req_data := request.Data;
+        move('Hello', req_data, 5);
         writeln(format('Sending Hello %d...', [request_nbr]));
-        zmq_send(requester, request, 0);
-        zmq_msg_close(request);
+        socket.Send(request);
 
-        zmq_msg_init(reply);
-        zmq_recv(requester, reply, 0);
-        writeln(format('Received World %d...', [request_nbr]));
-        zmq_msg_close(reply);
+        reply := TZMQMessage.Create();
+        socket.Recv(reply);
+        writeln(format('Received Wolrd %d', [request_nbr]));
       end;
-
-      zmq_close(requester);
-      zmq_term(context);
     except
-      on E:Exception do
-        Writeln(E.Classname, ': ', E.Message);
+      on E: EZMQException do
+        writeln('Error: '+E.Message);
     end;
   finally
-    FreeMem(reply);
-    FreeMem(request);
+    socket.Free;
+    context.Free;
   end;
+
 end.

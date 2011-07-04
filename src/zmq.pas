@@ -22,14 +22,15 @@
 unit zmq;
 
 interface
-{$IFDEF WINDOWS}
 uses
-  Winsock;
+{$IFDEF MSWINDOWS}
+  Winsock,
 {$ENDIF}
-
+  SysUtils;
+  
 const
 
-{$IFDEF WINDOWS}
+{$IFDEF MSWINDOWS}
 LIBZMQ = 'libzmq.dll';
 {$ENDIF}
 
@@ -144,10 +145,11 @@ end;
 PZMQMsg = ^TZMQMsg;
 
 TZMQFreeFn = procedure(data, hint: Pointer);
+PZMQFreeFn = ^TZMQFreeFn;
 
 TZMQPollItem = packed record
   socket: Pointer;
-{$IFDEF WINDOWS}
+{$IFDEF MSWINDOWS}
   fd: TSocket;
 {$ELSE}
   fd: Integer;
@@ -158,11 +160,21 @@ end;
 
 PZMQPollItem = ^TZMQPollItem;
 
+EZMQException = class(Exception)
+private
+  _errcode: Integer;
+public
+  constructor Create; overload;
+  property ErrCode: Integer read _errcode;
+end;
+
+
+
 {-----------------------------------}
 {-----------------------------------}
 { Run-time API version detection.   }
 {-----------------------------------}
-procedure zmq_version(major, minot, patch: Integer); cdecl; external LIBZMQ;
+procedure zmq_version(var major, minor, patch: Integer); cdecl; external LIBZMQ;
 
 {-----------------------------------}
 {-----------------------------------}
@@ -178,7 +190,7 @@ function zmq_strerror(errnum: Integer): PChar; cdecl; external LIBZMQ;
 function zmq_msg_init(msg: PZMQMsg): Integer; cdecl; external LIBZMQ;
 function zmq_msg_init_size(msg: PZMQMsg; size: Cardinal): Integer; cdecl; external LIBZMQ;
 function zmq_msg_init_data(msg: PZMQMsg; data: Pointer; size: Cardinal;
-  zmq_free_fn: TZMQFreeFn; hint: Pointer): Integer; cdecl; external LIBZMQ;
+    zmq_free_fn: TZMQFreeFn; hint: Pointer): Integer; cdecl; external LIBZMQ;
 function zmq_msg_close(msg: PZMQMsg): Integer; cdecl; external LIBZMQ;
 function zmq_msg_move(dest, src: PZMQMsg): Integer; cdecl; external LIBZMQ;
 function zmq_msg_copy(dest, src: PZMQMsg): Integer; cdecl; external LIBZMQ;
@@ -200,9 +212,9 @@ function zmq_term(context: Pointer): Integer; cdecl; external LIBZMQ;
 function zmq_socket(context: Pointer; itype: Integer): Pointer; cdecl; external LIBZMQ;
 function zmq_close(s: Pointer): Integer; cdecl; external LIBZMQ;
 function zmq_setsockopt(s: Pointer; option: Integer; const optval: Pointer;
-  optvallen: Cardinal): Integer; cdecl; external LIBZMQ;
+    optvallen: Cardinal): Integer; cdecl; external LIBZMQ;
 function zmq_getsockopt(s: Pointer; option: Integer; optval: Pointer;
-  var optvallen: Cardinal): Integer; cdecl; external LIBZMQ;
+    var optvallen: Cardinal): Integer; cdecl; external LIBZMQ;
 function zmq_bind(s: Pointer; const addr: PChar): Integer; cdecl; external LIBZMQ;
 function zmq_connect(s: Pointer; const addr: PChar): Integer; cdecl; external LIBZMQ;
 function zmq_send(s: Pointer; msg: PZMQMsg; flags: Integer): Integer; cdecl; external LIBZMQ;
@@ -213,15 +225,61 @@ function zmq_recv(s: Pointer; msg: PZMQMsg; flags: Integer): Integer; cdecl; ext
 { I/O multiplexing.                 }
 {-----------------------------------}
 function zmq_poll(items: PZMQPollItem; nitems: Integer;
-  timeout: Longint): Integer; cdecl; external LIBZMQ;
+    timeout: Longint): Integer; cdecl; external LIBZMQ;
 
 {-----------------------------------}
 {-----------------------------------}
 { Built-in devices                  }
 {-----------------------------------}
 function zmq_device(device: Integer; insocket,
-  outsocket: Pointer): Integer; cdecl; external LIBZMQ;
+    outsocket: Pointer): Integer; cdecl; external LIBZMQ;
+
+
+{-----------------------------------}
+{-----------------------------------}
+{ zmq high level abstractions       }
+{-----------------------------------}
+function Poll(items: PZMQPollItem; nitems: Integer; timeout: Longint = -1): Integer;
+procedure Device(device: Integer; insocket, outsocket: Pointer);
+procedure Version(var major, minor, patch: Integer);
+
 
 implementation
+
+{-----------------------------------}
+{-----------------------------------}
+function Poll(items: PZMQPollItem; nitems: Integer; timeout: Integer = -1): Integer;
+begin
+  result := zmq_poll(items, nitems, timeout);
+  if result < 0 then
+    raise EZMQException.Create();
+end;
+
+{-----------------------------------}
+procedure Device(device: Integer; insocket, outsocket: Pointer);
+var
+  rc: Integer;
+begin
+  rc := zmq_device(device, insocket, outsocket);
+  if rc <> 0 then
+    raise EZMQException.Create();
+end;
+
+{-----------------------------------}
+procedure Version(var major, minor, patch: Integer);
+begin
+  zmq_version(major, minor, patch);
+end;
+
+{-----------------------------------}
+{-----------------------------------}
+{ EZMQException }
+{-----------------------------------}
+constructor EZMQException.Create;
+begin
+  _errcode := zmq_errno();
+  inherited Create(zmq_strerror(_errcode));
+end;
+
 
 end.
