@@ -6,3 +6,6 @@
 *.dof
 *.cbk
 *.dll
+bin/
+lib/
+obj/
