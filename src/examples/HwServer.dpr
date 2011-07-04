@@ -40,17 +40,17 @@ begin
 
   while true do
   begin
-      request := TZMQMessage.Create;
-      socket.Recv(request);
-      writeln('Received Hello');
-      request.Free;
+    request := TZMQMessage.Create;
+    socket.Recv(request);
+    writeln('Received Hello');
+    request.Free;
 
-      sleep(1);
+    sleep(1);
 
-      reply := TZMQMessage.Create(5);
-      data := reply.Data;
-      move('World', data, 5);
-      socket.Send(reply);
-      reply.Free;
+    reply := TZMQMessage.Create(5);
+    data := reply.Data;
+    move('World', data, 5);
+    socket.Send(reply);
+    reply.Free;
   end;
 end.
