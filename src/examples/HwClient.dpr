@@ -36,13 +36,13 @@ var
   req_data: Pointer;
 begin
 
-  context := TZMQContext.Create(0);
+  context := TZMQContext.Create(1);
   socket := TZMQSocket.Create(context, ZMQ_REQ);
 
   try
     try
       writeln('Connecting to hello world server...');
-      socket.Connect(PChar('tcp://localhost:5555'));
+      socket.Connect('tcp://localhost:5555');
 
       for request_nbr := 0 to 9 do
       begin
