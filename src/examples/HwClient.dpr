@@ -51,10 +51,12 @@ begin
         move('Hello', req_data, 5);
         writeln(format('Sending Hello %d...', [request_nbr]));
         socket.Send(request);
+        request.Free;
 
         reply := TZMQMessage.Create();
         socket.Recv(reply);
         writeln(format('Received Wolrd %d', [request_nbr]));
+        reply.Free;
       end;
     except
       on E: EZMQException do

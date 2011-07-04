@@ -26,46 +26,31 @@ program HwServer;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, zmq, windows;
+  SysUtils, zmq, ZMQContext, ZMQSocket, ZMQMessage;
 
 var
-  context, responder: Pointer;
-  request, reply: PZMQMsg;
+  context: TZMQContext;
+  socket: TZMQSocket;
+  request, reply: TZMQMessage;
+  data: Pointer;
 begin
-  GetMem(request, SizeOf(request));
-  GetMem(reply, SizeOf(reply));
+  context := TZMQContext.Create(1);
+  socket := TZMQSocket.Create(context, ZMQ_REP);
+  socket.Bind('tcp://*:5555');
 
-  try
-    try
-      context := zmq_init(1);
+  while true do
+  begin
+      request := TZMQMessage.Create;
+      socket.Recv(request);
+      writeln('Received Hello');
+      request.Free;
 
-      responder := zmq_socket(context, ZMQ_REP);
-      zmq_bind(responder, 'tcp://*:5555');
+      sleep(1);
 
-      while true do
-      begin
-        zmq_msg_init(request);
-        zmq_recv(responder, request, 0);
-        writeln('Received Hello...');
-        zmq_msg_close(request);
-
-        sleep(1);
-
-        zmq_msg_init_size(reply, 5);
-        CopyMemory(zmq_msg_data(reply), PChar('World'), 5);
-        zmq_send(responder, reply, 0);
-        zmq_msg_close(reply);
-      end;
-
-      zmq_close(responder);
-      zmq_term(context);
-
-    except
-      on E:Exception do
-        Writeln(E.Classname, ': ', E.Message);
-    end;
-  finally
-    FreeMem(reply);
-    FreeMem(request);
+      reply := TZMQMessage.Create(5);
+      data := reply.Data;
+      move('World', data, 5);
+      socket.Send(reply);
+      reply.Free;
   end;
 end.
