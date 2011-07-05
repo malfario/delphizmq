@@ -26,13 +26,12 @@ program HwServer;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, zmq, ZMQContext, ZMQSocket, ZMQMessage;
+  SysUtils, zmq, ZMQContext, ZMQSocket, ZMQMessage, Windows;
 
 var
   context: TZMQContext;
   socket: TZMQSocket;
   request, reply: TZMQMessage;
-  data: Pointer;
 begin
   context := TZMQContext.Create(1);
   socket := TZMQSocket.Create(context, ZMQ_REP);
@@ -42,14 +41,13 @@ begin
   begin
     request := TZMQMessage.Create;
     socket.Recv(request);
-    writeln('Received Hello');
+    writeln(format('Received %s', [copy(request.ptr.vsm_data, 0, request.ptr.vsm_size)]));
     request.Free;
 
     sleep(1);
 
     reply := TZMQMessage.Create(5);
-    data := reply.Data;
-    move('World', data, 5);
+    CopyMemory(reply.Data, PChar('World'), 5);
     socket.Send(reply);
     reply.Free;
   end;
