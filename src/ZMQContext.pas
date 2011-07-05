@@ -17,40 +17,44 @@
     along with delphizmq.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-// JCL_DEBUG_EXPERT_GENERATEJDBG OFF
-// JCL_DEBUG_EXPERT_INSERTJDBG OFF
-// JCL_DEBUG_EXPERT_DELETEMAPFILE OFF
+unit ZMQContext;
 
-program HwServer;
-
-{$APPTYPE CONSOLE}
+interface
 
 uses
-  SysUtils, zmq, ZMQContext, ZMQSocket, ZMQMessage;
+  zmq;
 
-var
-  context: TZMQContext;
-  socket: TZMQSocket;
-  request, reply: TZMQMessage;
-  data: Pointer;
-begin
-  context := TZMQContext.Create(1);
-  socket := TZMQSocket.Create(context, ZMQ_REP);
-  socket.Bind('tcp://*:5555');
-
-  while true do
-  begin
-    request := TZMQMessage.Create;
-    socket.Recv(request);
-    writeln('Received Hello');
-    request.Free;
-
-    sleep(1);
-
-    reply := TZMQMessage.Create(5);
-    data := reply.Data;
-    move('World', data, 5);
-    socket.Send(reply);
-    reply.Free;
+type
+  TZMQContext = class
+  private
+    _ptr: Pointer;
+  public
+    constructor Create(io_threads: Integer);
+    destructor Destroy; override;
+    property ptr: Pointer read _ptr;
   end;
+
+implementation
+
+{-----------------------------------}
+{-----------------------------------}
+{ TZMQContext }
+{-----------------------------------}
+constructor TZMQContext.Create(io_threads: Integer);
+begin
+  _ptr := zmq_init(io_threads);
+  if _ptr = nil then
+    raise EZMQException.Create();
+end;
+
+{-----------------------------------}
+destructor TZMQContext.Destroy;
+var
+  rc: Integer;
+begin
+  rc := zmq_term(_ptr);
+  assert(rc = 0);  
+  inherited;
+end;
+
 end.

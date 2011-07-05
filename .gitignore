@@ -7,3 +7,6 @@
 *.cbk
 *.dll
 bin/
+lib/
+obj/
+
